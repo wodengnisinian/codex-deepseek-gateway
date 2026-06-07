@@ -1,0 +1,278 @@
+# ============================================================
+# Codex Desktop + DeepSeek Gateway 插件兼容模式配置
+# 文件位置：
+#   隐私信息，codex的.config配置文件位置
+#
+# 核心目标：
+#   1. Codex Desktop 的 UI、登录状态、插件入口继续使用 OpenAI 生态
+#   2. 模型请求转发到本地 DeepSeek 网关
+#   3. 不把真实 DeepSeek API Key 写进 Codex 配置文件
+#   4. 尽量减少“思考输出”“重复回复”“流式中断”
+#   5. 不写死 Codex 插件缓存路径，避免升级后插件失效
+# ============================================================
+
+
+# ============================================================
+# 一、默认模型与模型供应商
+# ============================================================
+
+# 指定当前默认使用的模型供应商。
+# 这里对应下面的：
+#   [model_providers.deepseek_gateway_plugin_mode]
+model_provider = "deepseek_gateway_plugin_mode"
+
+# 指定 Codex 默认调用的模型名称。
+# 这个名称必须是你的本地网关能够识别并映射的模型名。
+# 如果网关里模型名叫 deepseek-v4-pro，就保持这个。
+model = "deepseek-v4-pro"
+
+
+# ============================================================
+# 二、推理、思考展示、回复长度控制
+# ============================================================
+
+# 推理强度。
+# 原来你写的是 xhigh，但 xhigh 对模型和网关适配要求更高。
+# 为了稳定，建议先用 high。
+# 如果你的网关确认支持 xhigh，再改成：
+#   model_reasoning_effort = "xhigh"
+model_reasoning_effort = "high"
+
+# 关闭 reasoning summary。
+# 作用：尽量不要让 Codex 展示“思考摘要”。
+model_reasoning_summary = "none"
+
+# 告诉 Codex：当前模型不支持 reasoning summaries。
+# 作用：减少 Codex 主动请求或展示 reasoning summary 的概率。
+model_supports_reasoning_summaries = false
+
+# 隐藏 agent reasoning。
+# 作用：尽量减少界面里出现“思考步骤”“推理内容”。
+hide_agent_reasoning = true
+
+# 控制回复详细程度。
+# low = 尽量简洁。
+# 注意：这个配置主要对 Responses API 有效；
+# 如果你的本地 DeepSeek 网关没有处理这个字段，可能会被忽略。
+model_verbosity = "low"
+
+# Codex 的回复风格。
+# pragmatic = 偏实用、直接。
+personality = "pragmatic"
+
+
+# ============================================================
+# 三、历史记录
+# ============================================================
+
+notify = [ "隐私信息" ]
+[history]
+
+# 不持久化历史。
+# 作用：
+#   1. 减少旧上下文影响新对话
+#   2. 降低重复回复、串上下文的概率
+#   3. 适合你这种调试网关和插件的场景
+persistence = "none"
+
+
+# ============================================================
+# 四、本地 DeepSeek 网关供应商配置
+# ============================================================
+
+[model_providers.deepseek_gateway_plugin_mode]
+
+# 供应商显示名称。
+# 只是名称，方便你识别。
+name = "DeepSeek Gateway Plugin Mode"
+
+# 本地网关地址。
+# Codex 会把模型请求发到这里。
+# 你的 FastAPI / Uvicorn 网关需要监听：
+#   http://127.0.0.1:3688
+base_url = "http://127.0.0.1:3688/v1"
+
+# 使用 Responses API 协议。
+# 你的网关需要兼容：
+#   /v1/responses
+wire_api = "responses"
+
+# 保留 OpenAI 登录鉴权。
+# 作用：
+#   1. Codex Desktop 仍然认为自己处于 OpenAI 登录生态中
+#   2. 插件入口更容易保留
+#   3. 避免完全变成普通第三方 API 模式
+requires_openai_auth = true
+
+# 本地网关校验 token 时保留。
+# 如果你的网关代码要求：
+#   Authorization: Bearer local-gateway-token
+# 就保留这一行。
+#
+# 如果你的本地网关不校验这个 token，可以删除这一行。
+experimental_bearer_token = "local-gateway-token"
+
+# 普通请求最大重试次数。
+# 网络偶发失败时，Codex 会重试。
+request_max_retries = 3
+
+# 流式响应最大重试次数。
+# 适合处理偶发的 stream disconnected 问题。
+stream_max_retries = 3
+
+# 流式响应空闲超时时间，单位毫秒。
+# 300000 = 300 秒 = 5 分钟。
+# DeepSeek 回复较慢时，可以避免过早断开。
+stream_idle_timeout_ms = 300000
+
+
+# ============================================================
+# 五、功能开关
+# ============================================================
+
+[features]
+
+# 是否启用 JS REPL。
+# 这里关闭，减少额外插件/运行时干扰。
+js_repl = false
+
+# 是否启用 memories。
+# 你原配置是 true，这里保留。
+memories = true
+
+
+# ============================================================
+# 六、插件启用项
+# ============================================================
+# 注意：
+#   这里只保留插件 enabled 开关。
+#
+# 不建议在主配置里手动写死以下内容：
+#   notify = [...]
+#   [marketplaces.openai-bundled]
+#   [marketplaces.openai-primary-runtime]
+#   [mcp_servers.node_repl]
+#   [mcp_servers.node_repl.env]
+#
+# 原因：
+#   这些配置里通常包含 Codex 插件缓存版本号和本地运行时路径，
+#   例如：
+#     隐私信息，此处是版本号
+#     隐私信息，此处是版本号
+#     隐私信息
+#
+#   Codex Desktop 更新后，这些路径很容易变化。
+#   写死后反而可能导致插件启动失败。
+#
+# 建议：
+#   插件运行时路径交给 Codex Desktop 自动生成和维护。
+#
+# 注意：
+#   下方插件都属于可安装插件，所以作者没有删除，下面插件只做举例学习，实际盘符地址可能需更改
+# ============================================================
+
+# 文档插件
+[plugins."documents@openai-primary-runtime"]
+enabled = true
+
+# 表格插件
+[plugins."spreadsheets@openai-primary-runtime"]
+enabled = true
+
+# PPT / 演示文稿插件
+[plugins."presentations@openai-primary-runtime"]
+enabled = true
+
+# 电脑操控插件
+[plugins."computer-use@openai-bundled"]
+enabled = true
+
+# GitHub 插件
+[plugins."github@openai-curated"]
+enabled = true
+
+# 浏览器插件
+[plugins."browser@openai-bundled"]
+enabled = true
+
+
+# ============================================================
+# 七、Codex Desktop 界面设置
+# ============================================================
+
+[desktop]
+
+# 对话详情显示模式。
+# 你原来是 STEPS_COMMANDS，这里保留。
+# 如果你觉得界面仍然显示太多步骤，可以后续尝试改成：
+#   conversationDetailMode = "COMMANDS"
+#
+# 但为了兼容性，当前先保留原值。
+conversationDetailMode = "STEPS_COMMANDS"
+
+# 关闭环境建议。
+ambient-suggestions-enabled = false
+
+# 后续任务队列模式。
+# steer = 用户可以继续引导当前任务。
+followUpQueueMode = "steer"
+
+# 允许无项目时使用热键窗口。
+hotkey-window-projectless-default-enabled = true
+
+
+# ============================================================
+# 八、Windows 沙盒权限
+# ============================================================
+
+[windows]
+
+# elevated = 管理员/提升权限沙盒。
+# 你之前需要设置管理员沙盒，所以这里保留。
+sandbox = "elevated"
+
+
+# ============================================================
+# 九、记忆设置
+# ============================================================
+
+[memories]
+
+# 允许生成记忆。
+generate_memories = true
+
+# 允许使用记忆。
+use_memories = true
+
+
+# ============================================================
+# 十、受信任项目目录
+# ============================================================
+# 说明：
+#   这些是你之前已经信任过的 Codex 项目目录。
+#   trust_level = "trusted" 表示 Codex 在这些目录下可以更方便地执行任务。
+#
+# 注意：
+#   路径建议保持小写或原样，不要频繁改。
+#   如果某个项目已经不用了，可以整段删除。
+# ============================================================
+
+[projects.'已经信任过的 Codex 项目目录位置，隐私']
+trust_level = "trusted"
+
+此处涉及作者隐私，所以不便出现，上述只是举例
+
+
+[mcp_servers.node_repl.env]
+NODE_REPL_NATIVE_PIPE_CONNECT_TIMEOUT_MS = "1000"
+NODE_REPL_NODE_MODULE_DIRS = ""
+NODE_REPL_NODE_PATH = '隐私信息'
+NODE_REPL_TRUSTED_CODE_PATHS = '.codex文件位置'
+CODEX_HOME = '.codex文件位置'
+NODE_REPL_TRUSTED_BROWSER_CLIENT_SHA256S = "隐私信息，此处是哈希值"
+BROWSER_USE_AVAILABLE_BACKENDS = "chrome,iab"
+NODE_REPL_INSTRUCTIONS_USE_CASE_BROWSER = "Control the in-app browser in conjunction with the Browser Plugin."
+NODE_REPL_INSTRUCTIONS_USE_CASE_CHROME = "Control the Chrome browser in conjunction with the Chrome Plugin. Prefer this method of controlling Chrome over alternatives (such as Computer Use) unless the user explicitly mentions an alternative."
+BROWSER_USE_CODEX_APP_BUILD_FLAVOR = "prod"
+BROWSER_USE_CODEX_APP_VERSION = "隐私信息"
+CODEX_CLI_PATH = '隐私信息'
