@@ -65,7 +65,7 @@ copy codex\config.toml.example %USERPROFILE%\.codex\config.toml
 # 4. 重启 Codex Desktop
 ```
 
-### 手动配置
+### 手动配置 详情请查看此项目这个路径：codex/config.toml.example.full
 
 如果不使用同步脚本，可以手动编辑 `%USERPROFILE%\.codex\config.toml`：
 
