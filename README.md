@@ -1,125 +1,125 @@
 # Codex DeepSeek Gateway
 
 ```
-Codex Desktop  â†’  http://127.0.0.1:3688/v1  â†’  ç½‘å…³  â†’  DeepSeek API
+Codex Desktop  ¡ú  http://127.0.0.1:3688/v1  ¡ú  Íø¹Ø  ¡ú  DeepSeek API
 ```
 
-æœ¬åœ°å…¼å®¹ç½‘å…³ï¼Œå°† Codex çš„ Responses API åè®®è½¬æ¢ä¸º DeepSeek Chat Completionsï¼Œè®© Codex ä½¿ç”¨ DeepSeek æ¨¡å‹ã€‚ä¸ä¿®æ”¹ Codex æœ¬èº«ã€‚
+±¾µØ¼æÈİÍø¹Ø£¬½« Codex µÄ Responses API Ğ­Òé×ª»»Îª DeepSeek Chat Completions£¬ÈÃ Codex Ê¹ÓÃ DeepSeek Ä£ĞÍ¡£²»ĞŞ¸Ä Codex ±¾Éí¡£
 
-## å¿«é€Ÿå¼€å§‹
+## ¿ìËÙ¿ªÊ¼
 
 ```powershell
 cd codex-deepseek-gateway
 
-# 1. è®¾ç½® API Keyï¼ˆé‡å¯ç»ˆç«¯ç”Ÿæ•ˆï¼‰
+# 1. ÉèÖÃ API Key£¨ÖØÆôÖÕ¶ËÉúĞ§£©
 [Environment]::SetEnvironmentVariable("DEEPSEEK_API_KEY", "sk-your-key", "User")
 
-# 2. å¯åŠ¨ç½‘å…³
+# 2. Æô¶¯Íø¹Ø
 .\scripts\run_proxy.ps1
 ```
 
-ç½‘å…³å¯åŠ¨åç›‘å¬ `http://127.0.0.1:3688`ã€‚
+Íø¹ØÆô¶¯ºó¼àÌı `http://127.0.0.1:3688`¡£
 
-### æ’ä»¶å…¼å®¹æ¨¡å¼
+### ²å¼ş¼æÈİÄ£Ê½
 
-å¦‚éœ€åœ¨ Codex Desktop ä¸­ä¿æŒ OpenAI ç™»å½•æ€åŒæ—¶ä½¿ç”¨æ’ä»¶ï¼Œé¢å¤–è®¾ç½®ä¸¤ä¸ªç¯å¢ƒå˜é‡ï¼š
+ÈçĞèÔÚ Codex Desktop ÖĞ±£³Ö OpenAI µÇÂ¼Ì¬Í¬Ê±Ê¹ÓÃ²å¼ş£¬¶îÍâÉèÖÃÁ½¸ö»·¾³±äÁ¿£º
 
 ```powershell
 [Environment]::SetEnvironmentVariable("GATEWAY_AUTH_TOKEN", "local-gateway-token", "User")
 [Environment]::SetEnvironmentVariable("GATEWAY_MODEL_PROVIDER", "deepseek_gateway_plugin_mode", "User")
 ```
 
-ç„¶åå°† `codex/config.toml` ä¸­"æ¨¡å¼äºŒ"çš„æ³¨é‡Šå»æ‰ï¼Œ"æ¨¡å¼ä¸€"æ³¨é‡Šæ‰ï¼Œè¿è¡Œï¼š
+È»ºó½« `codex/config.toml` ÖĞ"Ä£Ê½¶ş"µÄ×¢ÊÍÈ¥µô£¬"Ä£Ê½Ò»"×¢ÊÍµô£¬ÔËĞĞ£º
 
 ```powershell
 .\scripts\apply_codex_all.ps1
 ```
 
-é‡å¯ Codex å³å¯ã€‚
+ÖØÆô Codex ¼´¿É¡£
 
-## é¡¹ç›®ç»“æ„
+## ÏîÄ¿½á¹¹
 
 ```
-server.py                   # FastAPI ç½‘å…³ä¸»ç¨‹åº
+server.py                   # FastAPI Íø¹ØÖ÷³ÌĞò
 adapters/
-  chat_to_responses.py       # Chat Completions â†’ Responses API
-  responses_to_chat.py       # Responses API â†’ Chat Completions
-  tools_adapter.py           # Codex æ’ä»¶å·¥å…·åè®®é€‚é…
+  chat_to_responses.py       # Chat Completions ¡ú Responses API
+  responses_to_chat.py       # Responses API ¡ú Chat Completions
+  tools_adapter.py           # Codex ²å¼ş¹¤¾ßĞ­ÒéÊÊÅä
 tests/
-  test_adapters.py           # é€‚é…å™¨å•å…ƒæµ‹è¯•
-  test_server.py             # æœåŠ¡å™¨æµ‹è¯•
+  test_adapters.py           # ÊÊÅäÆ÷µ¥Ôª²âÊÔ
+  test_server.py             # ·şÎñÆ÷²âÊÔ
 codex/
-  config.toml                # æœ¬åœ°é…ç½®æ¨¡æ¿ï¼ˆgitignoreï¼Œä¸æäº¤ï¼‰
-  config.toml.example        # é…ç½®ç¤ºä¾‹ï¼ˆä¸¤ç§æ¨¡å¼åˆå¹¶åœ¨ä¸€ä¸ªæ–‡ä»¶ï¼‰
-  model_catalog.json         # æ¨¡å‹ç›®å½•
-  skills/                    # æœ¬åœ°æŠ€èƒ½æ–‡ä»¶
+  config.toml                # ±¾µØÅäÖÃÄ£°å£¨gitignore£¬²»Ìá½»£©
+  config.toml.example        # ÅäÖÃÊ¾Àı£¨Á½ÖÖÄ£Ê½ºÏ²¢ÔÚÒ»¸öÎÄ¼ş£©
+  model_catalog.json         # Ä£ĞÍÄ¿Â¼
+  skills/                    # ±¾µØ¼¼ÄÜÎÄ¼ş
 scripts/
-  run_proxy.ps1              # ä¸€é”®å¯åŠ¨ï¼ˆè‡ªåŠ¨ venv + pipï¼‰
-  apply_codex_all.ps1        # åŒæ­¥é…ç½®åˆ° %USERPROFILE%\.codex
-  test_*.ps1                 # é›†æˆæµ‹è¯•è„šæœ¬
+  run_proxy.ps1              # Ò»¼üÆô¶¯£¨×Ô¶¯ venv + pip£©
+  apply_codex_all.ps1        # Í¬²½ÅäÖÃµ½ %USERPROFILE%\.codex
+  test_*.ps1                 # ¼¯³É²âÊÔ½Å±¾
 ```
 
-## ç«¯ç‚¹
+## ¶Ëµã
 
-| æ–¹æ³• | è·¯å¾„ | è¯´æ˜ |
+| ·½·¨ | Â·¾¶ | ËµÃ÷ |
 |------|------|------|
-| GET | `/health` | å¥åº·æ£€æŸ¥ |
-| GET | `/v1/models` | æ¨¡å‹åˆ—è¡¨ï¼ˆä» `codex/model_catalog.json` åŠ¨æ€è¯»å–ï¼‰ |
-| POST | `/v1/responses` | Responses â†’ Chat Completions åè®®è½¬æ¢ |
+| GET | `/health` | ½¡¿µ¼ì²é |
+| GET | `/v1/models` | Ä£ĞÍÁĞ±í£¨´Ó `codex/model_catalog.json` ¶¯Ì¬¶ÁÈ¡£© |
+| POST | `/v1/responses` | Responses ¡ú Chat Completions Ğ­Òé×ª»» |
 
-## ç¯å¢ƒå˜é‡
+## »·¾³±äÁ¿
 
-| å˜é‡ | å¿…éœ€ | è¯´æ˜ |
+| ±äÁ¿ | ±ØĞè | ËµÃ÷ |
 |------|------|------|
-| `DEEPSEEK_API_KEY` | æ˜¯ | DeepSeek API Key |
-| `DEEPSEEK_BASE_URL` | å¦ | DeepSeek API åœ°å€ï¼Œé»˜è®¤ `https://api.deepseek.com` |
-| `DEFAULT_MODEL` | å¦ | é»˜è®¤æ¨¡å‹ï¼Œé»˜è®¤ `deepseek-v4-flash` |
-| `PROXY_PORT` | å¦ | ç½‘å…³ç«¯å£ï¼Œé»˜è®¤ `3688` |
-| `GATEWAY_AUTH_TOKEN` | å¦ | ç½‘å…³æœ¬åœ°é‰´æƒ tokenï¼ˆæ’ä»¶å…¼å®¹æ¨¡å¼éœ€è¦ï¼‰ |
-| `GATEWAY_MODEL_PROVIDER` | å¦ | è¦†ç›– `/v1/models` çš„ `owned_by` å­—æ®µ |
-| `DEEPSEEK_THINKING` | å¦ | æ¨ç†å¼€å…³ï¼Œ`enabled` / `disabled` |
-| `DEEPSEEK_REASONING_EFFORT` | å¦ | æ¨ç†æ·±åº¦ï¼Œ`low` / `medium` / `high` / `max` |
+| `DEEPSEEK_API_KEY` | ÊÇ | DeepSeek API Key |
+| `DEEPSEEK_BASE_URL` | ·ñ | DeepSeek API µØÖ·£¬Ä¬ÈÏ `https://api.deepseek.com` |
+| `DEFAULT_MODEL` | ·ñ | Ä¬ÈÏÄ£ĞÍ£¬Ä¬ÈÏ `deepseek-v4-flash` |
+| `PROXY_PORT` | ·ñ | Íø¹Ø¶Ë¿Ú£¬Ä¬ÈÏ `3688` |
+| `GATEWAY_AUTH_TOKEN` | ·ñ | Íø¹Ø±¾µØ¼øÈ¨ token£¨²å¼ş¼æÈİÄ£Ê½ĞèÒª£© |
+| `GATEWAY_MODEL_PROVIDER` | ·ñ | ¸²¸Ç `/v1/models` µÄ `owned_by` ×Ö¶Î |
+| `DEEPSEEK_THINKING` | ·ñ | ÍÆÀí¿ª¹Ø£¬`enabled` / `disabled` |
+| `DEEPSEEK_REASONING_EFFORT` | ·ñ | ÍÆÀíÉî¶È£¬`low` / `medium` / `high` / `max` |
 
-## å·¥å…·è°ƒç”¨æµç¨‹
+## ¹¤¾ßµ÷ÓÃÁ÷³Ì
 
 ```
-1. Codex å‘é€ /v1/responsesï¼ˆå¸¦ toolsï¼‰
-2. ç½‘å…³å°† Responses å·¥å…·è½¬ä¸º Chat Completions å·¥å…·
-3. DeepSeek è¿”å› tool_calls
-4. ç½‘å…³è½¬ä¸º Responses function_call é¡¹è¿”å›
-5. Codex æœ¬åœ°æ‰§è¡Œå·¥å…·ï¼Œå‘é€ function_call_output
-6. ç½‘å…³è½¬ä¸º role=tool Chat æ¶ˆæ¯
-7. DeepSeek ç»§ç»­è¿”å›æœ€ç»ˆæ–‡æœ¬
+1. Codex ·¢ËÍ /v1/responses£¨´ø tools£©
+2. Íø¹Ø½« Responses ¹¤¾ß×ªÎª Chat Completions ¹¤¾ß
+3. DeepSeek ·µ»Ø tool_calls
+4. Íø¹Ø×ªÎª Responses function_call Ïî·µ»Ø
+5. Codex ±¾µØÖ´ĞĞ¹¤¾ß£¬·¢ËÍ function_call_output
+6. Íø¹Ø×ªÎª role=tool Chat ÏûÏ¢
+7. DeepSeek ¼ÌĞø·µ»Ø×îÖÕÎÄ±¾
 ```
 
-## å·¥å…·åè®®æ˜ å°„
+## ¹¤¾ßĞ­ÒéÓ³Éä
 
-| Codex å·¥å…·ç±»å‹ | DeepSeek ç¼–ç  | è§£ç å› |
+| Codex ¹¤¾ßÀàĞÍ | DeepSeek ±àÂë | ½âÂë»Ø |
 |---------------|-------------|--------|
-| `function` | åŸå‡½æ•°å | `function_call` |
-| `namespace` | `cx_*__*` åˆ«å | `function_call` + namespace |
+| `function` | Ô­º¯ÊıÃû | `function_call` |
+| `namespace` | `cx_*__*` ±ğÃû | `function_call` + namespace |
 | `tool_search` | `tool_search` | `tool_search_call` |
-| `custom` | `custom__*` åˆ«å | `custom_tool_call` |
+| `custom` | `custom__*` ±ğÃû | `custom_tool_call` |
 
-## ç¼“å­˜ç­–ç•¥
+## »º´æ²ßÂÔ
 
-ç½‘å…³ä»…åœ¨ Codex å‘é€æ’ä»¶å·¥å…·ï¼ˆnamespace / tool_search / customï¼‰æ—¶æ‰æ’å…¥ tool protocol hintï¼Œå¹¶**åˆå¹¶åˆ°ç¬¬ä¸€æ¡ system æ¶ˆæ¯**ä¸­ï¼Œé¿å… DeepSeek 128-token ç¼“å­˜å—è¢«ç¢ç‰‡åŒ–ã€‚
+Íø¹Ø½öÔÚ Codex ·¢ËÍ²å¼ş¹¤¾ß£¨namespace / tool_search / custom£©Ê±²Å²åÈë tool protocol hint£¬²¢**ºÏ²¢µ½µÚÒ»Ìõ system ÏûÏ¢**ÖĞ£¬±ÜÃâ DeepSeek 128-token »º´æ¿é±»ËéÆ¬»¯¡£
 
-| çº¿ç¨‹ç±»å‹ | å‰ç¼€ä¸€è‡´æ€§ | é¢„æœŸå‘½ä¸­ç‡ |
+| Ïß³ÌÀàĞÍ | Ç°×ºÒ»ÖÂĞÔ | Ô¤ÆÚÃüÖĞÂÊ |
 |---------|-----------|-----------|
-| ç¼–ç çº¿ç¨‹ï¼ˆå¸¦å·¥å…·ï¼‰ | åŒçº¿ç¨‹ hint + instructions ä¸å˜ | 98%+ |
-| é—²èŠçº¿ç¨‹ï¼ˆæ— å·¥å…·ï¼‰ | åŒçº¿ç¨‹ instructions ä¸å˜ | 98%+ |
-| æ–°çº¿ç¨‹é¦–æ¬¡è¯·æ±‚ | å¿…ç„¶ miss | 0% |
+| ±àÂëÏß³Ì£¨´ø¹¤¾ß£© | Í¬Ïß³Ì hint + instructions ²»±ä | 98%+ |
+| ÏĞÁÄÏß³Ì£¨ÎŞ¹¤¾ß£© | Í¬Ïß³Ì instructions ²»±ä | 98%+ |
+| ĞÂÏß³ÌÊ×´ÎÇëÇó | ±ØÈ» miss | 0% |
 
-å‰©ä½™ ~1-2% missï¼ˆæœªç¼“å­˜å‘½ä¸­ï¼‰æ¥è‡ªæ–°çº¿ç¨‹åˆå§‹åŒ–å’Œ 128-token ç¼“å­˜å—æœ«å°¾ç¢ç‰‡ï¼Œæ— æ³•é€šè¿‡ä»£ç æ¶ˆé™¤ã€‚
+Ê£Óà ~1-2% miss£¨Î´»º´æÃüÖĞ£©À´×ÔĞÂÏß³Ì³õÊ¼»¯ºÍ 128-token »º´æ¿éÄ©Î²ËéÆ¬£¬ÎŞ·¨Í¨¹ı´úÂëÏû³ı¡£
 
-## æµ‹è¯•
+## ²âÊÔ
 
 ```powershell
-# å•å…ƒæµ‹è¯•ï¼ˆä¸éœ€è¦ç½‘ç»œï¼‰
+# µ¥Ôª²âÊÔ£¨²»ĞèÒªÍøÂç£©
 python -m unittest discover -s tests
 
-# é›†æˆæµ‹è¯•ï¼ˆéœ€è¦ç½‘å…³è¿è¡Œä¸­ï¼‰
+# ¼¯³É²âÊÔ£¨ĞèÒªÍø¹ØÔËĞĞÖĞ£©
 .\scripts\test_health.ps1
 .\scripts\test_models.ps1
 .\scripts\test_response.ps1
@@ -128,12 +128,25 @@ python -m unittest discover -s tests
 .\scripts\test_stream_tool_call.ps1
 ```
 
-## è®¸å¯è¯
+
+## Èí¼şÏÂÔØ
+
+Ç°Íù [GitHub Releases](https://github.com/wodengnisinian/codex-deepseek-gateway/releases) ÏÂÔØ×îĞÂ°æ±¾¡£
+
+1. ÏÂÔØ CDG Launcher.exe
+2. Ë«»÷ÔËĞĞ£¬ÎŞĞè°²×° Python
+3. ÌîĞ´ DeepSeek API Key£¨´Ó https://platform.deepseek.com »ñÈ¡£©
+4. Ñ¡ÔñÄ£ĞÍ£¬µã»÷Æô¶¯Íø¹Ø
+5. Íø¹ØÄ¬ÈÏµØÖ·£ºhttp://127.0.0.1:3688/v1
+
+Ò²¿É´ÓÔ´ÂëÔËĞĞ£¬¼ûÏÂ·½¿ìËÙ¿ªÊ¼¡£
+
+## Ğí¿ÉÖ¤
 
 MIT
 
 ---
 
-## æ’°ç¨¿äºº
+## ×«¸åÈË
 
 - [wodengnisinian](https://github.com/wodengnisinian)
