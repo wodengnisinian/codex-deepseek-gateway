@@ -1,0 +1,32 @@
+﻿{
+  "models": [
+    {
+      "id": "deepseek-v4-flash",
+      "name": "DeepSeek V4 Flash",
+      "description": "极速响应，适合日常编码",
+      "contextWindow": 131072,
+      "provider": "deepseek_gateway"
+    },
+    {
+      "id": "deepseek-v4-pro",
+      "name": "DeepSeek V4 Pro",
+      "description": "深度推理，适合复杂任务",
+      "contextWindow": 131072,
+      "provider": "deepseek_gateway"
+    },
+    {
+      "id": "deepseek-v4",
+      "name": "DeepSeek V4",
+      "description": "通用对话模型",
+      "contextWindow": 131072,
+      "provider": "deepseek_gateway"
+    },
+    {
+      "id": "deepseek-reasoner",
+      "name": "DeepSeek Reasoner (R1)",
+      "description": "思维链推理模型",
+      "contextWindow": 131072,
+      "provider": "deepseek_gateway"
+    }
+  ]
+}
