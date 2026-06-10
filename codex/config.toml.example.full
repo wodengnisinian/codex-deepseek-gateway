@@ -171,29 +171,6 @@ memories = true
 #   下方插件都属于可安装插件，所以作者没有删除，下面插件只做举例学习，实际盘符地址可能需更改
 # ============================================================
 
-# 文档插件
-[plugins."documents@openai-primary-runtime"]
-enabled = true
-
-# 表格插件
-[plugins."spreadsheets@openai-primary-runtime"]
-enabled = true
-
-# PPT / 演示文稿插件
-[plugins."presentations@openai-primary-runtime"]
-enabled = true
-
-# 电脑操控插件
-[plugins."computer-use@openai-bundled"]
-enabled = true
-
-# GitHub 插件
-[plugins."github@openai-curated"]
-enabled = true
-
-# 浏览器插件
-[plugins."browser@openai-bundled"]
-enabled = true
 
 
 # ============================================================
@@ -257,22 +234,7 @@ use_memories = true
 #   如果某个项目已经不用了，可以整段删除。
 # ============================================================
 
-[projects.'已经信任过的 Codex 项目目录位置，隐私']
-trust_level = "trusted"
-
-此处涉及作者隐私，所以不便出现，上述只是举例
 
 
 [mcp_servers.node_repl.env]
-NODE_REPL_NATIVE_PIPE_CONNECT_TIMEOUT_MS = "1000"
-NODE_REPL_NODE_MODULE_DIRS = ""
-NODE_REPL_NODE_PATH = '隐私信息'
-NODE_REPL_TRUSTED_CODE_PATHS = '.codex文件位置'
-CODEX_HOME = '.codex文件位置'
-NODE_REPL_TRUSTED_BROWSER_CLIENT_SHA256S = "隐私信息，此处是哈希值"
-BROWSER_USE_AVAILABLE_BACKENDS = "chrome,iab"
-NODE_REPL_INSTRUCTIONS_USE_CASE_BROWSER = "Control the in-app browser in conjunction with the Browser Plugin."
-NODE_REPL_INSTRUCTIONS_USE_CASE_CHROME = "Control the Chrome browser in conjunction with the Chrome Plugin. Prefer this method of controlling Chrome over alternatives (such as Computer Use) unless the user explicitly mentions an alternative."
-BROWSER_USE_CODEX_APP_BUILD_FLAVOR = "prod"
-BROWSER_USE_CODEX_APP_VERSION = "隐私信息"
-CODEX_CLI_PATH = '隐私信息'
+找到自己的备份文件将这一段复制进来
