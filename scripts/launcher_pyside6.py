@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """Codex DeepSeek Gateway -- Desktop Launcher  v1.0.1  PySide6 Edition (No Console Popup)"""
 import sys, os, re, locale, time, threading, logging, queue, asyncio, socket
 from urllib.request import urlopen
@@ -640,7 +640,7 @@ class MainWindow(QMainWindow):
 
         # Port 3688 is alive but not our server -- offer force kill
         reply2 = QMessageBox.question(self, T("stop_t"),
-            "绔彛 3688 鍙兘琚叾浠栫▼搴忓崰鐢紝纭畾寮哄埗鍏抽棴锛? if LNG == "zh" else "Port 3688 may be used by another program. Force close?",
+            "端口 3688 可能被其他程序占用，确定强制关闭？" if LNG == "zh" else "Port 3688 may be used by another program. Force close?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
         if reply2 == QMessageBox.StandardButton.Yes:
             GatewayService.stop_port_3688()
