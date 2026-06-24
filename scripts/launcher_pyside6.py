@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
-"""Codex DeepSeek Gateway -- Desktop Launcher  v0.4.0  PySide6 Edition"""
-import sys, os, re, subprocess, locale, time, threading, logging, queue, asyncio
+﻿# -*- coding: utf-8 -*-
+"""Codex DeepSeek Gateway -- Desktop Launcher  v1.0.1  PySide6 Edition (No Console Popup)"""
+import sys, os, re, locale, time, threading, logging, queue, asyncio, socket
 from urllib.request import urlopen
 
 from PySide6.QtWidgets import (
@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (
     QDialog, QScrollArea,
 )
 from PySide6.QtCore import (
-    Qt, QTimer, QThread, Signal, QProcess
+    Qt, QTimer, QThread, Signal
 )
 from PySide6.QtGui import (
     QIcon, QPixmap,
@@ -76,22 +76,6 @@ def get_app_dir():
         return os.path.dirname(here)
     return here
 
-
-def find_run_script():
-    """Find run_proxy.ps1, preferring exe-adjacent paths over _MEIPASS."""
-    root = get_app_dir()
-    candidates = [
-        os.path.join(root, "scripts", "run_proxy.ps1"),
-        os.path.join(root, "run_proxy.ps1"),
-        os.path.join(os.getcwd(), "scripts", "run_proxy.ps1"),
-        os.path.join(os.getcwd(), "run_proxy.ps1"),
-    ]
-    if getattr(sys, "frozen", False):
-        candidates.append(resource_path("scripts/run_proxy.ps1"))
-    for c in candidates:
-        if os.path.exists(c):
-            return os.path.abspath(c)
-    return ""
 
 # ---- Constants ----
 GW       = "http://127.0.0.1:3688"
@@ -160,7 +144,6 @@ TS = {
     "stop_q":   {"zh":"\u786e\u5b9a\u505c\u6b62\uff1f","en":"Stop the gateway?"},
     "stop_m":   {"zh":"\u5df2\u505c\u6b62","en":"Gateway stopped."},
     "already":  {"zh":"\u7f51\u5173\u5df2\u8fd0\u884c","en":"Gateway already running"},
-    "no_script":{"zh":"\u627e\u4e0d\u5230 run_proxy.ps1","en":"run_proxy.ps1 not found"},
     "no_gw":    {"zh":"\u672a\u53d1\u73b0\u8fd0\u884c\u7f51\u5173","en":"No running gateway"},
     "error":    {"zh":"\u9519\u8bef","en":"Error"},
     "about_ttl":{"zh":"\u5173\u4e8e CDG Launcher","en":"About CDG Launcher"},
@@ -200,21 +183,33 @@ class GatewayService:
 
     @staticmethod
     def api_key_configured():
-        if os.environ.get("DEEPSEEK_API_KEY", ""): return True
-        try:
-            r = subprocess.run(["powershell","-Command",
-                "[Environment]::GetEnvironmentVariable('DEEPSEEK_API_KEY','User')"],
-                capture_output=True, text=True)
-            return bool(r.stdout.strip())
-        except: return False
+        """Check if DEEPSEEK_API_KEY is configured (env var or Windows registry)."""
+        if os.environ.get("DEEPSEEK_API_KEY", ""):
+            return True
+        if sys.platform == "win32":
+            try:
+                import winreg
+                with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment", 0, winreg.KEY_READ) as key:
+                    val, _ = winreg.QueryValueEx(key, "DEEPSEEK_API_KEY")
+                    return bool(val)
+            except (FileNotFoundError, OSError):
+                pass
+        return False
 
     @staticmethod
     def save_api_key(value):
-        safe = value.replace("'", "''")
-        subprocess.run(["powershell","-Command",
-            "[Environment]::SetEnvironmentVariable('DEEPSEEK_API_KEY','"+safe+"','User')"],
-            capture_output=True)
+        """Save DEEPSEEK_API_KEY to env var and Windows registry (no subprocess)."""
         os.environ["DEEPSEEK_API_KEY"] = value
+        if sys.platform == "win32":
+            try:
+                import winreg, ctypes
+                with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment", 0, winreg.KEY_SET_VALUE) as key:
+                    winreg.SetValueEx(key, "DEEPSEEK_API_KEY", 0, winreg.REG_SZ, value)
+                HWND_BROADCAST = 0xFFFF
+                WM_SETTINGCHANGE = 0x001A
+                ctypes.windll.user32.SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0, "Environment", 0, 5000, None)
+            except Exception:
+                pass
 
     @staticmethod
     def read_config():
@@ -235,11 +230,19 @@ class GatewayService:
 
     @staticmethod
     def stop_port_3688():
+        """Kill process listening on port 3688 via ctypes (no powershell)."""
+        if sys.platform != "win32":
+            return
         try:
-            subprocess.run(["powershell","-Command",
-                "$ids=@((Get-NetTCPConnection -LocalPort 3688 -ErrorAction SilentlyContinue).OwningProcess|Select -Unique);if($ids){$ids|%{Stop-Process -Id $_ -Force}}"],
-                capture_output=True)
-        except: pass
+            import ctypes
+            pid = _find_pid_on_port(3688)
+            if pid:
+                h = ctypes.windll.kernel32.OpenProcess(1, False, pid)
+                if h:
+                    ctypes.windll.kernel32.TerminateProcess(h, 0)
+                    ctypes.windll.kernel32.CloseHandle(h)
+        except Exception:
+            pass
 
 
 # ---- Status Worker (QThread) ----
@@ -382,24 +385,6 @@ class GatewayServer(QThread):
         self._should_stop.set()
 
 
-# ---- Log Reader (for external QProcess, kept for fallback) ----
-class LogReader(QThread):
-    line_received = Signal(str)
-
-    def __init__(self, process):
-        super().__init__()
-        self._proc = process
-
-    def run(self):
-        while self._proc and self._proc.state() == QProcess.ProcessState.Running:
-            self._proc.waitForReadyRead(50)
-            data = self._proc.readAllStandardOutput()
-            if data:
-                for line in data.data().decode("utf-8", errors="replace").splitlines():
-                    self.line_received.emit(line)
-            if self._proc.state() != QProcess.ProcessState.Running:
-                break
-
 
 # ---- Main Window ----
 class MainWindow(QMainWindow):
@@ -408,7 +393,6 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(T("title"))
         self.resize(900, 560)
         self.setMinimumSize(760, 480)
-        self._gw_proc = None
         self._gw_server = None
         self._log_reader = None
         self._status_worker = None
@@ -416,6 +400,12 @@ class MainWindow(QMainWindow):
         self._status_dots = {}
         self._status_lbls = {}
         # Set icon BEFORE building UI for immediate taskbar reflection
+
+        # Anti-duplicate-start guards
+        self._is_starting = False
+        self._last_start_time = 0.0
+        self._start_debounce_sec = 3.0
+
         app_icon = get_app_icon()
         if not app_icon.isNull():
             self.setWindowIcon(app_icon)
@@ -559,47 +549,98 @@ class MainWindow(QMainWindow):
             self._status_lbls[key].setStyleSheet("color:" + clr + "; font-size:9px; font-weight:bold;")
         self._home_page.update_status(results)
 
+    def _is_port_listening(self, port=3688, host="127.0.0.1"):
+        """Check if port is already occupied using socket connect."""
+        try:
+            import socket as _sock
+            s = _sock.socket(_sock.AF_INET, _sock.SOCK_STREAM)
+            s.settimeout(0.3)
+            result = s.connect_ex((host, port))
+            s.close()
+            return result == 0
+        except Exception:
+            return False
+
     def start_gateway(self):
+        """Start the gateway server (user-initiated, debounced, guarded)."""
+        now = time.time()
+
+        # Guard: already starting
+        if self._is_starting:
+            self._logs_page.append_log("[CDG] Gateway start already in progress, please wait...")
+            return
+
+        # Guard: debounce
+        if now - self._last_start_time < self._start_debounce_sec:
+            self._logs_page.append_log("[CDG] Please wait before starting again...")
+            return
+
+        # Guard: health check (already running)
         if GatewayService.health_check(0.3):
             QMessageBox.information(self, T("start_t"), T("already"))
             return
+
+        # Guard: port occupied by external process
+        if self._is_port_listening(3688):
+            QMessageBox.warning(self, T("start_t"),
+                "绔彛 3688 宸茶鍗犵敤鎴栫綉鍏冲凡杩愯" if LNG == "zh" else
+                "Port 3688 is occupied or gateway is already running")
+            return
+
+        self._is_starting = True
+        self._last_start_time = now
+
         self._logs_page.clear_log()
         self._logs_page.append_log("[CDG] " + T("start_m"))
-        self._logs_page.append_log("[CDG] Starting embedded uvicorn on " + GW)
+        self._logs_page.append_log(f"[CDG] Starting embedded uvicorn on {GW} (PID={os.getpid()})")
         self._gw_server = GatewayServer()
         self._gw_server.log_line.connect(self._logs_page.append_log)
         self._gw_server.finished.connect(self._on_server_finished)
-        # Keep strong reference to prevent GC
         self._gateway_thread = self._gw_server
         self._gw_server.start()
         self._home_page.set_gateway_buttons(starting=True, running=False)
 
     def _on_server_finished(self):
+        """Called when GatewayServer QThread finishes."""
+        self._is_starting = False
         self._logs_page.append_log("[CDG] Gateway thread finished")
         self._home_page.set_gateway_buttons(starting=False, running=False)
         self._gw_server = None
         self._gateway_thread = None
-        QTimer.singleShot(2000, self._async_refresh)
+        if not getattr(self, "_user_stopped", False):
+            QTimer.singleShot(2000, self._async_refresh)
 
     def stop_gateway(self):
+        """Stop the gateway (user-initiated)."""
         reply = QMessageBox.question(self, T("stop_t"), T("stop_q"),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
-        if reply != QMessageBox.StandardButton.Yes: return
-        # If our embedded server is alive, shut it down gracefully
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+
+        self._user_stopped = True
+        self._is_starting = False
+
+        # If embedded server is alive, shut it down
         if self._gw_server and self._gw_server.isRunning():
             self._logs_page.append_log("[CDG] Shutting down gateway...")
-            self._gw_server.server.should_exit = True
+            try:
+                if self._gw_server.server:
+                    self._gw_server.server.should_exit = True
+            except Exception:
+                pass
             self._gw_server.shutdown()
             self._home_page.set_gateway_buttons(starting=False, running=False)
             QTimer.singleShot(2000, self._async_refresh)
             QMessageBox.information(self, T("stop_t"), T("stop_m"))
             return
+
         if not GatewayService.health_check(0.3):
             QMessageBox.information(self, T("stop_t"), T("no_gw"))
             return
+
         # Port 3688 is alive but not our server -- offer force kill
         reply2 = QMessageBox.question(self, T("stop_t"),
-            "\u7aef\u53e3 3688 \u53ef\u80fd\u88ab\u5176\u4ed6\u7a0b\u5e8f\u5360\u7528\uff0c\u786e\u5b9a\u5f3a\u5236\u5173\u95ed\uff1f" if LNG == "zh" else "Port 3688 may be used by another program. Force close?",
+            "绔彛 3688 鍙兘琚叾浠栫▼搴忓崰鐢紝纭畾寮哄埗鍏抽棴锛? if LNG == "zh" else "Port 3688 may be used by another program. Force close?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
         if reply2 == QMessageBox.StandardButton.Yes:
             GatewayService.stop_port_3688()
@@ -612,15 +653,16 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         if self._gw_server and self._gw_server.isRunning():
-            if self._gw_server.server:
-                self._gw_server.server.should_exit = True
+            try:
+                if self._gw_server.server:
+                    self._gw_server.server.should_exit = True
+            except Exception:
+                pass
             self._gw_server.shutdown()
             self._gw_server.wait(3000)
         self._gateway_thread = None
         self._gw_server = None
         self._home_page.set_gateway_buttons(starting=False, running=False)
-        if self._gw_proc and self._gw_proc.state() == QProcess.ProcessState.Running:
-            self._gw_proc.terminate()
         event.accept()
 
 
@@ -1035,21 +1077,68 @@ if __name__ == "__main__":
 
 
 # ---- PyInstaller Command ----
-# IMPORTANT: Delete build/, dist/, and *.spec before rebuilding to avoid icon cache.
+# IMPORTANT: Delete build/, dist/, and *.spec before rebuilding.
 #
-# If run_proxy.ps1 is in scripts directory:
-# pyinstaller --clean --noconfirm -F -w launcher_pyside6.py --name "CDG Launcher" --icon "app_icon.ico" --add-data "app_icon.ico;." --add-data "app_icon.png;." --add-data "scripts;scripts"
+# Windows no-console build (NO powershell/cmd popups):
+#   pyinstaller --clean --noconfirm -F -w --noconsole --windowed ^
+#     --name "CDG Launcher" --icon "app_icon.ico" ^
+#     --add-data "app_icon.ico;." --add-data "app_icon.png;." ^
+#     --add-data "codex;codex" ^
+#     scripts/launcher_pyside6.py
 #
-# If run_proxy.ps1 is in root:
-# pyinstaller --clean --noconfirm -F -w launcher_pyside6.py --name "CDG Launcher" --icon "app_icon.ico" --add-data "app_icon.ico;." --add-data "app_icon.png;." --add-data "run_proxy.ps1;."
-#
-# Old commands:
-# pyinstaller -F -w launcher_pyside6.py --name "CDG Launcher" --icon app_icon.ico \
-#     --add-data "app_icon.png;." --add-data "app_icon.ico;." \
-#     --add-data "scripts\run_proxy.ps1;scripts"
+# The spec file (CDGLauncher.spec) must set console=False.
 
-# If run_proxy.ps1 is in root:
-# pyinstaller -F -w launcher_pyside6.py --name "CDG Launcher" --icon app_icon.ico \
-#     --add-data "app_icon.png;." --add-data "app_icon.ico;." \
-#     --add-data "run_proxy.ps1;."
 
+# ===================================================================
+# ---- Windows helper: find PID listening on a TCP port (ctypes) ----
+# ===================================================================
+def _find_pid_on_port(port):
+    """Find the PID of the process listening on a TCP port.
+    Uses Windows IP Helper API via ctypes (no powershell/subprocess).
+    Returns None if not found or on error."""
+    if sys.platform != "win32":
+        return None
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        class MIB_TCPROW_OWNER_PID(ctypes.Structure):
+            _fields_ = [
+                ("dwState", wintypes.DWORD),
+                ("dwLocalAddr", wintypes.DWORD),
+                ("dwLocalPort", wintypes.DWORD),
+                ("dwRemoteAddr", wintypes.DWORD),
+                ("dwRemotePort", wintypes.DWORD),
+                ("dwOwningPid", wintypes.DWORD),
+            ]
+
+        AF_INET = 2
+        TCP_TABLE_OWNER_PID_LISTENER = 4
+
+        buf_size = wintypes.DWORD(0)
+        ctypes.windll.iphlpapi.GetExtendedTcpTable(
+            None, ctypes.byref(buf_size), False,
+            AF_INET, TCP_TABLE_OWNER_PID_LISTENER, 0,
+        )
+
+        if buf_size.value == 0:
+            return None
+
+        buf = ctypes.create_string_buffer(buf_size.value)
+        ret = ctypes.windll.iphlpapi.GetExtendedTcpTable(
+            buf, ctypes.byref(buf_size), False,
+            AF_INET, TCP_TABLE_OWNER_PID_LISTENER, 0,
+        )
+        if ret != 0:
+            return None
+
+        num_entries = ctypes.c_uint32.from_buffer(buf, 0).value
+        row_array = (MIB_TCPROW_OWNER_PID * num_entries).from_buffer(buf, 4)
+
+        target = __import__("socket").htons(port)
+        for row in row_array:
+            if row.dwLocalPort == target:
+                return row.dwOwningPid
+        return None
+    except Exception:
+        return None
