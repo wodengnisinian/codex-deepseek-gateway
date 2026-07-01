@@ -1,5 +1,14 @@
 ﻿# Changelog
 
+## [v1.0.2] - 2026-07-01
+
+### Fixed
+- **Launcher controls**: Keep Start Gateway and Stop Gateway buttons in sync with the live health/port status.
+- **Stop gateway action**: Define the Windows port PID helper before the Qt event loop starts so force-stop can actually terminate the process on port 3688.
+- **Chinese UI text**: Restored readable Chinese warning text for port occupation prompts.
+
+[v1.0.2]: https://github.com/wodengnisinian/codex-deepseek-gateway/releases/tag/v1.0.2
+
 
 ## [v1.0.1] - 2026-06-24
 

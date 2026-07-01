@@ -39,7 +39,6 @@ hiddenimports = [
     "websockets",
     "websockets.legacy",
     "dotenv",
-    "python_dotenv",
     "asyncio",
     "logging",
     "queue",

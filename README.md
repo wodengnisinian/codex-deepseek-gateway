@@ -189,6 +189,14 @@ python -m unittest discover -s tests
 
 ![CDG Launcher UI](docs/screenshot.png)
 
+## v1.0.2 Changelog (2026-07-01)
+
+### Fixed
+
+- **Launcher controls**: Start Gateway and Stop Gateway buttons now stay clickable according to the live gateway/port state.
+- **Stop gateway action**: The Windows port PID helper is now defined before the Qt event loop starts, so force-stop can terminate the process on port 3688.
+- **Chinese UI text**: Restored readable Chinese warning text for port occupation prompts.
+
 ## v1.0.1 Changelog (2026-06-24)
 
 ### Fixed
@@ -208,13 +216,13 @@ This project has separate **source versions** and **software versions**:
 
 ### Source Version (Git Tag)
 
-The source repo uses Git Tags to mark versions. Each Release corresponds to a tag (e.g. `v1.0.1`).
+The source repo uses Git Tags to mark versions. Each Release corresponds to a tag (e.g. `v1.0.2`).
 
 ```powershell
 git clone https://github.com/wodengnisinian/codex-deepseek-gateway.git
-git checkout v1.0.1
+git checkout v1.0.2
 # Or download ZIP:
-# https://github.com/wodengnisinian/codex-deepseek-gateway/archive/refs/tags/v1.0.1.zip
+# https://github.com/wodengnisinian/codex-deepseek-gateway/archive/refs/tags/v1.0.2.zip
 ```
 
 ### Software Version (GitHub Release)
@@ -227,6 +235,7 @@ To update: go to the Releases page, download the latest `CDG Launcher.exe`, and 
 
 | Version | Type | Description |
 |---------|------|-------------|
+| `v1.0.2` | Source + Software | Fixed launcher Start/Stop button state sync and force-stop behavior |
 | `v1.0.1` | Source + Software | Fixed Windows cmd/powershell popups, added anti-duplicate-start protection |
 | `v1.0.0` | Source + Software | Initial release |
 | main branch | Source | Latest development code, may be unstable |

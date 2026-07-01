@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Codex DeepSeek Gateway -- Desktop Launcher  v1.0.1  PySide6 Edition (No Console Popup)"""
+"""Codex DeepSeek Gateway -- Desktop Launcher  v1.0.2  PySide6 Edition (No Console Popup)"""
 import sys, os, re, locale, time, threading, logging, queue, asyncio, socket
 from urllib.request import urlopen
 
@@ -151,7 +151,7 @@ TS = {
     "about_desc":{"zh":"Codex DeepSeek Gateway","en":"Codex DeepSeek Gateway"},
     "about_author":{"zh":"Author: ZB-WDSN","en":"Author: ZB-WDSN"},
     "about_school":{"zh":"Guizhou Light Industry Technical University","en":"Guizhou Light Industry Technical University"},
-    "about_ver": {"zh":"v0.4.0  PySide6 Edition","en":"v0.4.0  PySide6 Edition"},
+    "about_ver": {"zh":"v1.0.2  PySide6 Edition","en":"v1.0.2  PySide6 Edition"},
 }
 def T(k): return TS.get(k,{}).get(LNG, k)
 
@@ -541,13 +541,21 @@ class MainWindow(QMainWindow):
         self._status_worker.start()
 
     def _on_status_result(self, h_ok, m_ok, model, a_ok):
-        results = {"gw": h_ok, "md": m_ok, "ap": h_ok and a_ok, "pt": h_ok}
+        port_busy = h_ok or self._is_port_listening(3688)
+        results = {"gw": h_ok, "md": m_ok, "ap": h_ok and a_ok, "pt": port_busy}
         for key in ("gw", "md", "ap", "pt"):
             ok = results[key]
             clr = C["ok"] if ok else C["er"]
             self._status_dots[key].setStyleSheet("color:" + clr + "; font-size:9px;")
             self._status_lbls[key].setStyleSheet("color:" + clr + "; font-size:9px; font-weight:bold;")
         self._home_page.update_status(results)
+        thread_running = bool(self._gw_server and self._gw_server.isRunning())
+        if h_ok and self._is_starting:
+            self._is_starting = False
+        self._home_page.set_gateway_buttons(
+            starting=self._is_starting,
+            running=h_ok or port_busy or thread_running,
+        )
 
     def _is_port_listening(self, port=3688, host="127.0.0.1"):
         """Check if port is already occupied using socket connect."""
@@ -577,17 +585,20 @@ class MainWindow(QMainWindow):
 
         # Guard: health check (already running)
         if GatewayService.health_check(0.3):
+            self._is_starting = False
+            self._home_page.set_gateway_buttons(starting=False, running=True)
             QMessageBox.information(self, T("start_t"), T("already"))
             return
 
         # Guard: port occupied by external process
         if self._is_port_listening(3688):
             QMessageBox.warning(self, T("start_t"),
-                "绔彛 3688 宸茶鍗犵敤鎴栫綉鍏冲凡杩愯" if LNG == "zh" else
+                "端口 3688 已被占用或网关已经运行" if LNG == "zh" else
                 "Port 3688 is occupied or gateway is already running")
             return
 
         self._is_starting = True
+        self._user_stopped = False
         self._last_start_time = now
 
         self._logs_page.clear_log()
@@ -634,7 +645,9 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, T("stop_t"), T("stop_m"))
             return
 
-        if not GatewayService.health_check(0.3):
+        port_busy = self._is_port_listening(3688)
+        if not GatewayService.health_check(0.3) and not port_busy:
+            self._home_page.set_gateway_buttons(starting=False, running=False)
             QMessageBox.information(self, T("stop_t"), T("no_gw"))
             return
 
@@ -1050,45 +1063,6 @@ class LogsPage(QWidget):
         self._log_box.clear()
 
 
-# ---- Entry Point ----
-def main():
-    # Windows AppUserModelID MUST be set BEFORE QApplication for taskbar icon
-    if sys.platform == "win32":
-        try:
-            import ctypes
-            ctypes.windll.shcore.SetProcessDpiAwareness(1)
-            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                "ZB-WDSN.CDGLauncher")
-        except Exception:
-            pass
-    app = QApplication(sys.argv)
-    app.setStyle("Fusion")
-    app_icon = get_app_icon()
-    if not app_icon.isNull():
-        app.setWindowIcon(app_icon)
-    window = MainWindow()
-    if not app_icon.isNull():
-        window.setWindowIcon(app_icon)
-    window.show()
-    sys.exit(app.exec())
-
-if __name__ == "__main__":
-    main()
-
-
-# ---- PyInstaller Command ----
-# IMPORTANT: Delete build/, dist/, and *.spec before rebuilding.
-#
-# Windows no-console build (NO powershell/cmd popups):
-#   pyinstaller --clean --noconfirm -F -w --noconsole --windowed ^
-#     --name "CDG Launcher" --icon "app_icon.ico" ^
-#     --add-data "app_icon.ico;." --add-data "app_icon.png;." ^
-#     --add-data "codex;codex" ^
-#     scripts/launcher_pyside6.py
-#
-# The spec file (CDGLauncher.spec) must set console=False.
-
-
 # ===================================================================
 # ---- Windows helper: find PID listening on a TCP port (ctypes) ----
 # ===================================================================
@@ -1142,3 +1116,42 @@ def _find_pid_on_port(port):
         return None
     except Exception:
         return None
+
+
+# ---- Entry Point ----
+def main():
+    # Windows AppUserModelID MUST be set BEFORE QApplication for taskbar icon
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            ctypes.windll.shcore.SetProcessDpiAwareness(1)
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+                "ZB-WDSN.CDGLauncher")
+        except Exception:
+            pass
+    app = QApplication(sys.argv)
+    app.setStyle("Fusion")
+    app_icon = get_app_icon()
+    if not app_icon.isNull():
+        app.setWindowIcon(app_icon)
+    window = MainWindow()
+    if not app_icon.isNull():
+        window.setWindowIcon(app_icon)
+    window.show()
+    sys.exit(app.exec())
+
+if __name__ == "__main__":
+    main()
+
+
+# ---- PyInstaller Command ----
+# IMPORTANT: Delete build/, dist/, and *.spec before rebuilding.
+#
+# Windows no-console build (NO powershell/cmd popups):
+#   pyinstaller --clean --noconfirm -F -w --noconsole --windowed ^
+#     --name "CDG Launcher" --icon "app_icon.ico" ^
+#     --add-data "app_icon.ico;." --add-data "app_icon.png;." ^
+#     --add-data "codex;codex" ^
+#     scripts/launcher_pyside6.py
+#
+# The spec file (CDGLauncher.spec) must set console=False.
